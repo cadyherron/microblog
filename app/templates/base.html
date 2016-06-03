@@ -11,9 +11,14 @@
     <div>Microblog:
         <a href="{{ url_for('index') }}">Home</a>
         | <a href="{{ url_for('user', nickname=g.user.nickname) }}">Your Profile</a>
+
+        | <form style="display: inline;" action="{{ url_for('search') }}" method="post" name="search">
+            {{ g.search_form.hidden_tag() }}
+            {{ g.search_form.search(size=20) }}
+            <input type="submit" value="Search">
+        </form>
+
         | <a href="{{ url_for('logout') }}">Logout</a>
-        <!--{% if g.user.is_authenticated %}-->
-        <!--{% endif %}-->
     </div>
     {% with messages = get_flashed_messages() %}
         {% if messages %}

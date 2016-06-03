@@ -1,28 +1,36 @@
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db, lm, oid
-from .forms import LoginForm, EditForm
-from .models import User
+from .forms import LoginForm, EditForm, PostForm
+from .models import User, Post
+from datetime import datetime
+from config import POSTS_PER_PAGE
 
 
 @app.route('/')
-@app.route('/index')
+@app.route('/index', methods=['GET', 'POST'])
+@app.route('/index/<int:page>', methods=['GET', 'POST'])
 # @login_required  # decorator to indicate that this is a restricted page
-def index():
-    user = g.user
-    posts = [  # fake array of posts
-        {
-            'author': {'nickname': 'John'},
-            'body': 'Beautiful day in Portland!'
-        },
-        {
-            'author': {'nickname': 'Susan'},
-            'body': 'The Avengers movie was so cool!'
-        }
-    ]
-    return render_template("index.html",
+def index(page=1):
+    form = PostForm()
+    g.user = User.query.get(1)
+    if form.validate_on_submit():
+        post = Post(body=form.post.data, timestamp=datetime.utcnow(), author=g.user)
+        db.session.add(post)
+        db.session.commit()
+        flash('Your post is now live!')
+        return redirect(url_for('index'))  # need to redirect here, or the form would submit again
+
+    # paginate takes: page number to start at, number of items per page, error flag
+    # if the error flag is True, return a 404 for an out of range page
+    # if the error flag is False, return an empty list
+    # if we put .items at the end of the next line, it would only keep the "items" part of the object
+    # instead, we moved this to the 'index.html' template
+    # the paginate object also includes 'has_next', 'has_prev', 'next_num', 'prev-num'
+    posts = g.user.followed_posts().paginate(page, POSTS_PER_PAGE, False)
+    return render_template('index.html',
                            title='Home',
-                           user=user,
+                           form=form,
                            posts=posts)
 
 
@@ -49,15 +57,13 @@ def logout():
 
 @app.route('/user/<nickname>')  # argument goes in angle brackets
 # @login_required
-def user(nickname):
-    user = User.query.filter_by(nickname=nickname).first()
+def user(nickname, page=1):
+    user = User.query.get(1)
+    # user = User.query.filter_by(nickname=nickname).first()
     if user is None:
         flash('User %s not found.' % nickname)
         return redirect(url_for('index'))
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
+    posts = user.posts.paginate(page, POSTS_PER_PAGE, False)
     return render_template('user.html',
                            user=user,
                            posts=posts)
@@ -130,7 +136,8 @@ def after_login(resp):
     if resp.email is None or resp.email == "":
         flash('Invalid login. Please try again.')
         return redirect(url_for('login'))
-    user = User.query.filter_by(email=resp.email).first()
+    # user = User.query.filter_by(email=resp.email).first()
+    user = User.query.get(1)
     if user is None:
         nickname = resp.nickname
         if nickname is None or nickname == "":

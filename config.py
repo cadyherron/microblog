@@ -21,3 +21,6 @@ MAIL_PORT = 2500
 MAIL_USERNAME = None
 MAIL_PASSWORD = None
 ADMINS = ['you@example.com']
+
+# pagination
+POSTS_PER_PAGE = 3

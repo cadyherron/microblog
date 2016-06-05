@@ -18,8 +18,7 @@ class User(db.Model):
     last_seen = db.Column(db.DateTime)
     followed = db.relationship('User',
                                secondary=followers,  # association table
-                               # odd syntax because followers table is not a model:
-                               primaryjoin=(followers.c.follower_id == id),
+                               primaryjoin=(followers.c.follower_id == id), # odd syntax because followers table is not a model
                                secondaryjoin=(followers.c.followed_id == id),
                                backref=db.backref('followers', lazy='dynamic'),
                                lazy='dynamic')

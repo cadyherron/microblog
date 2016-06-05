@@ -5,6 +5,7 @@ from .forms import LoginForm, EditForm, PostForm, SearchForm
 from .models import User, Post
 from datetime import datetime
 from config import POSTS_PER_PAGE, MAX_SEARCH_RESULTS
+from .emails import follower_notification
 
 
 @app.route('/')
@@ -103,6 +104,7 @@ def follow(nickname):
     db.session.add(u)
     db.session.commit()
     flash('You are now following ' + nickname + '!')
+    follower_notification(user, g.user)
     return redirect(url_for('user', nickname=nickname))
 
 
@@ -129,8 +131,8 @@ def unfollow(nickname):
 @app.route('/search', methods=['POST'])
 # @login_required
 def search():
-    if not g.search_form.validate_on_submit():
-        return redirect(url_for('index'))
+    # if not g.search_form.validate_on_submit():
+    #     return redirect(url_for('index'))
     return redirect(url_for('search_results', query=g.search_form.search.data))
 
 
@@ -177,11 +179,11 @@ def after_login(resp):
 @app.before_request
 def before_request():
     g.user = current_user
+    g.search_form = SearchForm()
     if g.user.is_authenticated:
         g.user.last_seen = datetime.utcnow()
         db.session.add(g.user)
         db.session.commit()
-        g.search_form = SearchForm()
 
 
 @app.errorhandler(404)

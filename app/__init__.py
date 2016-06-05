@@ -4,10 +4,12 @@ import os
 from flask_login import LoginManager
 from flask_openid import OpenID
 from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
+from flask_mail import Mail
 
 app = Flask(__name__)
 app.config.from_object('config')
 db = SQLAlchemy(app)
+mail = Mail(app)
 
 lm = LoginManager()
 lm.init_app(app)

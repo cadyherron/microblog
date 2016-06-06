@@ -1,10 +1,11 @@
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
+from flask_sqlalchemy import get_debug_queries
 from app import app, db, lm, oid
 from .forms import LoginForm, EditForm, PostForm, SearchForm
 from .models import User, Post
 from datetime import datetime
-from config import POSTS_PER_PAGE, MAX_SEARCH_RESULTS
+from config import POSTS_PER_PAGE, MAX_SEARCH_RESULTS, DATABASE_QUERY_TIMEOUT
 from .emails import follower_notification
 
 
@@ -85,6 +86,23 @@ def edit():
         form.nickname.data = g.user.nickname
         form.about_me.data = g.user.about_me
     return render_template('edit.html', form=form)
+
+
+@app.route('/delete/<int:id>')
+# @login_required
+def delete(id):
+    post = Post.query.get(id)
+    g.user = User.query.get(1)
+    if post is None:
+        flash('Post not found.')
+        return redirect(url_for('index'))
+    if post.author.id != g.user.id:
+        flash('You cannot delete this post.')
+        return redirect(url_for('index'))
+    db.session.delete(post)
+    db.session.commit()
+    flash('Your post has been deleted.')
+    return redirect(url_for('index'))
 
 
 @app.route('/follow/<nickname>')
@@ -184,6 +202,18 @@ def before_request():
         g.user.last_seen = datetime.utcnow()
         db.session.add(g.user)
         db.session.commit()
+
+
+@app.after_request
+def after_request(response):
+    for query in get_debug_queries():
+        if query.duraction >= DATABASE_QUERY_TIMEOUT:
+            app.logger.warning("SLOW QUERY: %s\nDuration: %fs\nContext: %s\n" % (query.statement,
+                                                                                 query.parameters,
+                                                                                 query.duration,
+                                                                                 query.context))
+    return response
+
 
 
 @app.errorhandler(404)

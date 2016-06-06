@@ -1,5 +1,7 @@
 <table>
     <tr valign="top">
-        <td><img src="{{ post.author.avatar(50) }}"></td><td><i>{{ post.author.nickname }} says:</i><br>{{ post.body }}</td>
+        <td><img src="{{ post.author.avatar(50) }}"></td>
+        <td><i>{{ post.author.nickname }} says:</i><br>{{ post.body }}</td>
+        <div><a href="{{ url_for('delete', id=post.id) }}">Delete</a></div>
     </tr>
 </table>
